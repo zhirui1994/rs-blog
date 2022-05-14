@@ -32,3 +32,39 @@ impl AppError {
     Self::notfound_msg("No matching data found!")
   }
 }
+
+impl std::fmt::Display for AppError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<`_>) -> std::result::Result {
+    write!(f, "{:?}" self)
+  }
+}
+
+impl std::error::Error for AppError {}
+
+impl From<deadpool_postgres::PoolError> for AppError {
+  fn from(err: deadpool_postgres::PoolError) -> Self {
+    Self::from(Box::new(err), AppErrorType::Db)
+  }
+}
+
+impl From<tokio_postgres::Error> for AppError {
+  fn from(err: tokio_postgres::Error) -> Self {
+      Self::from_err(Box::new(err), AppErrorType::Db)
+  }
+}
+
+impl From<askama::Error> for AppError {
+  fn from(err: askama::Error) -> Self {
+      Self::from_err(Box::new(err), AppErrorType::Template)
+  }
+}
+
+impl IntoResponse for AppError {
+  fn into_response(self) -> axum::response::Response {
+    let msg = match self.message {
+      Some(msg) => msg.clone(),
+      None => "有错误发生".to_string(),
+    };
+    msg.into_response()
+  }
+}
